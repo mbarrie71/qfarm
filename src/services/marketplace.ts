@@ -10,6 +10,10 @@ export const marketplaceService = {
         farmer:farmers(id, name, location)
       `)
 
+    if (filter?.search) {
+      query = query.or(`name.ilike.%${filter.search}%,description.ilike.%${filter.search}%`)
+    }
+
     if (filter?.category) {
       query = query.eq('category', filter.category)
     }
@@ -28,12 +32,18 @@ export const marketplaceService = {
 
     if (filter?.sortBy) {
       const order = filter.sortOrder || 'asc'
-      query = query.order(filter.sortBy, { ascending: order === 'asc' })
+      const field = filter.sortBy === 'date' ? 'created_at' : 'price'
+      query = query.order(field, { ascending: order === 'asc' })
+    }
+
+    if (filter?.limit) {
+      query = query.limit(filter.limit)
     }
 
     const { data, error } = await query
 
     if (error) {
+      console.error('Error fetching crops:', error)
       throw error
     }
 
@@ -51,6 +61,7 @@ export const marketplaceService = {
       .single()
 
     if (error) {
+      console.error('Error fetching crop:', error)
       throw error
     }
 
@@ -58,17 +69,40 @@ export const marketplaceService = {
   },
 
   async getCategories(): Promise<string[]> {
+    try {
+      const { data, error } = await supabase
+        .from('crops')
+        .select('category')
+        .neq('category', null)
+        .order('category');
+
+      if (error) {
+        console.error('Error fetching categories:', error);
+        throw new Error('Database error');
+      }
+
+      // Get unique categories
+      const categories = [...new Set(data.map(item => item.category))];
+      return categories;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw new Error('Database error');
+    }
+  },
+
+  async getFarmerLocations(): Promise<string[]> {
     const { data, error } = await supabase
-      .from('crops')
-      .select('category')
-      .returns<{ category: string }[]>()
+      .from('farmers')
+      .select('location')
+      .not('location', 'is', null)
 
     if (error) {
+      console.error('Error fetching locations:', error)
       throw error
     }
 
-    // Get unique categories and filter out any null values
-    return [...new Set(data.map(item => item.category).filter(Boolean))]
+    const locations = [...new Set(data.map(item => item.location))]
+    return locations.sort()
   },
 
   async createCrop(crop: Omit<Crop, 'id' | 'createdAt' | 'updatedAt'>): Promise<Crop> {
@@ -79,6 +113,7 @@ export const marketplaceService = {
       .single()
 
     if (error) {
+      console.error('Error creating crop:', error)
       throw error
     }
 
@@ -94,6 +129,7 @@ export const marketplaceService = {
       .single()
 
     if (error) {
+      console.error('Error updating crop:', error)
       throw error
     }
 
@@ -107,6 +143,7 @@ export const marketplaceService = {
       .eq('id', id)
 
     if (error) {
+      console.error('Error deleting crop:', error)
       throw error
     }
   }

@@ -8,6 +8,7 @@ import Register from './pages/Register'
 import Profile from './pages/Profile'
 import FarmerOnboarding from './pages/FarmerOnboarding'
 import ResetPassword from './pages/ResetPassword'
+import Footer from './components/Footer'
 
 // Lazy load other pages
 const Home = () => <div className="p-4">Home Page</div>
@@ -18,9 +19,9 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen flex flex-col bg-gray-50">
           <Navbar />
-          <main>
+          <main className="flex-grow">
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
@@ -92,6 +93,7 @@ function App() {
               />
             </Routes>
           </main>
+          <Footer />
         </div>
       </Router>
     </ErrorBoundary>
